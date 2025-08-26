@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>正在為您跳轉…</title>
+  <meta name="description" content="簡單、可自訂延遲的跳轉式網頁模板" />
+  <!-- 取消下行可以支援最基礎的 meta 立即跳轉；但 JS 已足夠靈活 -->
+  <!-- <meta http-equiv="refresh" content="0; url=https://example.com" /> -->
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Arial, "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif; margin: 0; display: grid; min-height: 100dvh; place-items: center; background: Canvas; color: CanvasText; }
+    .card { width: min(720px, 92vw); border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.08); border: 1px solid color-mix(in oklab, CanvasText 12%, transparent); background: color-mix(in oklab, Canvas 92%, CanvasText 2%); }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    p { margin: 6px 0; line-height: 1.6; }
+    .muted { opacity: .7; font-size: 14px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .btn { appearance: none; border: 1px solid color-mix(in oklab, CanvasText 16%, transparent); padding: 10px 14px; border-radius: 999px; background: transparent; cursor: pointer; font-weight: 600; }
+    .btn:hover { background: color-mix(in oklab, CanvasText 8%, transparent); }
+    code, kbd { background: color-mix(in oklab, CanvasText 10%, transparent); padding: 2px 6px; border-radius: 6px; }
+    a { color: inherit; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>正在為您跳轉…</h1>
+    <p>我們會自動把您帶到：<a id="targetLink" href="#">目標頁面</a></p>
+    <p class="muted" id="countdown"></p>
+
+    <div class="row" style="margin-top:12px;">
+      <button class="btn" id="goNow">立刻前往</button>
+      <button class="btn" id="cancel">取消自動跳轉</button>
+    </div>
+
+    <p class="muted">若未自動跳轉，請點擊「立刻前往」。</p>
+
+    <noscript>
+      <p>您的瀏覽器停用了 JavaScript。請直接前往：
+        <a href="https://example.com">https://example.com</a>
+      </p>
+    </noscript>
+  </main>
+
+  <script>
+    // === 可自訂區 ===
+    // 1) 目標連結（請改成您的網址）
+    const TARGET_URL = "https://line.me/ti/p/0Q8UcoRI9w"; // 範例："https://line.me/ti/p/KcCbkNB46C"
+
+    // 2) 延遲毫秒數（0 代表立即跳轉）
+    const DELAY_MS = 0; // 1.2 秒
+
+    // 3) 是否在跳轉時附加目前網址的查詢參數（例如 ?from=...）
+    const APPEND_CURRENT_QUERY = true;
+
+    // === 以下程式碼通常不需更動 ===
+    const linkEl = document.getElementById('targetLink');
+    const goNowBtn = document.getElementById('goNow');
+    const cancelBtn = document.getElementById('cancel');
+    const countdownEl = document.getElementById('countdown');
+
+    function withQuery(url) {
+      try {
+        const u = new URL(url, location.href);
+        if (APPEND_CURRENT_QUERY && location.search) {
+          // 合併現有查詢參數（保留目標原本的參數）
+          const src = new URLSearchParams(location.search);
+          src.forEach((v,k) => { if (!u.searchParams.has(k)) u.searchParams.set(k, v); });
+        }
+        return u.toString();
+      } catch { return url; }
+    }
+
+    const finalUrl = withQuery(TARGET_URL);
+    linkEl.href = finalUrl;
+    linkEl.textContent = finalUrl;
+
+    let timerId = null;
+    let remain = Math.max(0, Math.floor(DELAY_MS / 1000));
+
+    function updateCountdown() {
+      if (DELAY_MS <= 0) { countdownEl.textContent = "即將跳轉…"; return; }
+      countdownEl.textContent = `將在 ${remain} 秒後自動跳轉。`;
+    }
+
+    function redirect() {
+      // 使用 replace 不會留下歷史紀錄，避免返回時又被跳轉
+      window.location.replace(finalUrl);
+    }
+
+    function schedule() {
+      updateCountdown();
+      if (DELAY_MS <= 0) return redirect();
+      timerId = setTimeout(redirect, DELAY_MS);
+      // 顯示秒數遞減
+      const interval = setInterval(() => {
+        remain -= 1;
+        updateCountdown();
+        if (remain <= 0) clearInterval(interval);
+      }, 1000);
+    }
+
+    goNowBtn.addEventListener('click', redirect);
+    cancelBtn.addEventListener('click', () => {
+      if (timerId) clearTimeout(timerId);
+      countdownEl.textContent = "已取消自動跳轉。";
+    });
+
+    schedule();
+  </script>
+</body>
+</html>
